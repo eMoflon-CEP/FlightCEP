@@ -1,0 +1,71 @@
+﻿//*****************************************************************************
+// Title:         FlightMatch
+// Description:   FlightMatch description
+// Dependencies:  None
+// Author:        Konrad Altenhofen
+//
+//*****************************************************************************
+
+
+
+// TODO: Monitors and event definitions here
+
+monitor FlightMatch {
+	constant string eventChannel := "eMoflonPatternMatch";
+	TravelHasConnectingFlightMatchEvent travelHasConnectingFlight;
+
+	action onload() {
+		monitor.subscribe(eventChannel);
+		
+		
+		// flight delayed
+		on all FlightWithRouteMatchEvent() as flightWithRoute {
+			log "*** Flight[" + flightWithRoute.flightID + "] found ***" at INFO;
+			if (flightWithRoute.fligthArrival > flightWithRoute.flightDeparture + flightWithRoute.routeDuration) {
+				send FlightDelayed(flightWithRoute.flightID) to eventChannel;
+				log "*** Flight[" + flightWithRoute.flightID + "] is delayed ***" at INFO; 
+			} else {
+				log "*** Flight[" + flightWithRoute.flightID + "] is on time ***" at INFO; 
+				send FlightOnTimeAgain(flightWithRoute.flightID) to eventChannel;
+			}
+		}
+		
+		// flight capacity
+//		on all unmatched FlightInTravelMatchEvent() as flightInTravel {
+//			spawn summationForFlight(flightInTravel.flightID, flightInTravel.planeCapacity);
+//		}
+		
+		// connection flight not reachable
+		on all TravelHasConnectingFlightMatchEvent(): travelHasConnectingFlight -> 
+		(FlightDelayed(flightID=travelHasConnectingFlight.flightID) or FlightOnTimeAgain(flightID=travelHasConnectingFlight.flightID)) {
+			integer abs:=0;
+			if((travelHasConnectingFlight.arrivalGatePosition - travelHasConnectingFlight.departingGatePosition)<0) {
+				abs:= (travelHasConnectingFlight.departingGatePosition - travelHasConnectingFlight.arrivalGatePosition);
+			} else {
+				abs:=(travelHasConnectingFlight.arrivalGatePosition - travelHasConnectingFlight.departingGatePosition);
+			}	
+			if(travelHasConnectingFlight.connectingFlightDeparture.toFloat() <= (travelHasConnectingFlight.flightArrival.toFloat()
+							+ abs.toFloat() * travelHasConnectingFlight.transitAirportSize)) {
+				log "*** Travel[" + travelHasConnectingFlight.travelID + "] is not reachable ***" at DEBUG;
+				send TravelHasNotReachableConnectingFlight(travelHasConnectingFlight.travelID,travelHasConnectingFlight.connectingFlightID) to eventChannel;
+			} else {
+				// TODO: Reachable again
+				log "*** Travel[" + travelHasConnectingFlight.travelID + "] is reachable again ***" at DEBUG;
+			}
+		}
+	}
+	
+//	action summationForFlight(string flightID, integer maxCapacity) {
+//		integer sum := 0;
+//		on all  FlightInTravelMatchEvent(flightID=flightID) as flightInTravel {
+//			sum := sum+1;
+//			if(sum>=maxCapacity) {
+//				
+//			}
+//		}
+//		on all FlightInTravelMatchRemovedEvent(flightID=flightID) as flightInTravelRemoved {
+//			sum := sum-1;
+//			
+//		}
+//	}
+}

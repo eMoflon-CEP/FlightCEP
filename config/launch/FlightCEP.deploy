@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><configuration>
+<intAttribute key="com.apama.text.CONFIG_VERSION" value="3"/>
+<listAttribute key="com.apama.text.COMPONENTS">
+<listEntry>
+<component clear="true" correlatorLog="false" correlatorLogLocation="logs/${LAUNCH_CONFIG_NAME}_${CORRELATOR_NAME}.output.log" dataLocationDir="${project_loc:FlightCEP}/database/defaultCorrelator" distMemoryStoreEnabled="false" enabled="true" extraArguments="" hostname="localhost" inputLog="true" inputLogLocation="logs/defaultCorrelator_${START_TIME}_${ID}.input.log" isAutomaticOrdering="true" isPeristanceEnabled="false" javaEnabled="true" jmsResiliencyEnabled="false" logLevel="INFO" maxMBLocalHeap="512" maxMBLocalHeapEnabled="false" maxMBLocalOffHeap="16384" maxMBLocalOffHeapEnabled="false" name="defaultCorrelator" persistenceStartupOption="CLEAR_REINJECT" port="15903" reuse="false" type="CORRELATOR" umConfigurationEnabled="false" workingDir="/FlightCEP" xConfigEnabled="false" xConfigLocation="${project_loc:FlightCEP}/config/CorrelatorConfig.yaml">
+<runtimeDependencyEntry enabled="true" path="${APAMA_HOME}/monitors/scenario_support/ScenarioDeleterSupport.mon" type="PROJECT_BUNDLE_MON_FILE">
+<attributes>
+<attribute name="bundle-name" value="Scenario Service"/>
+<attribute name="origin-path" value=""/>
+<attribute name="origin" value="PRODUCT_CATALOG"/>
+<attribute name="bundle-file" value="ScenarioService.bnd"/>
+<attribute name="bundle-display-name" value="Scenario Service"/>
+</attributes>
+</runtimeDependencyEntry>
+<runtimeDependencyEntry enabled="true" path="${APAMA_HOME}/monitors/ScenarioService.mon" type="PROJECT_BUNDLE_MON_FILE">
+<attributes>
+<attribute name="bundle-name" value="Scenario Service"/>
+<attribute name="origin-path" value=""/>
+<attribute name="origin" value="PRODUCT_CATALOG"/>
+<attribute name="bundle-file" value="ScenarioService.bnd"/>
+<attribute name="bundle-display-name" value="Scenario Service"/>
+</attributes>
+</runtimeDependencyEntry>
+<runtimeDependencyEntry enabled="true" path="/FlightCEP/eventdefinitions/FlightMonitorEvents.mon" type="PROJECT_MON_FILE"/>
+<runtimeDependencyEntry enabled="true" path="/FlightCEP/monitors/FlightMatch.mon" type="PROJECT_MON_FILE"/>
+<runtimeDependencyEntry enabled="true" path="/FlightCEP/FlightCEP java application files/FlightCEP.jar" type="PROJECT_JMON_FILE"/>
+</component>
+</listEntry>
+</listAttribute>
+<booleanAttribute key="com.apama.text.OPEN_DASHBOARD_ATTR" value="true"/>
+<booleanAttribute key="com.apama.text.OPEN_DEFAULT_DASHBOARD_ATTR" value="true"/>
+<booleanAttribute key="com.apama.text.OPEN_ENABLE_DATAPLAYER_MODE_ATTR" value="false"/>
+<booleanAttribute key="com.apama.text.GENERATE_TIME_EVENTS_ATTR" value="true"/>
+</configuration>

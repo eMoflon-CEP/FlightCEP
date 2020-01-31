@@ -1,0 +1,60 @@
+﻿//*****************************************************************************
+// Title:         FlightMonitorEvents
+// Description:   Event Definitions for the Flight Model
+// Dependencies:  None
+// Author:        Konrad Altenhofen
+//
+//*****************************************************************************
+
+
+
+// TODO: Monitors and event definitions here
+
+event FlightWithRouteMatchEvent {
+	string flightID;
+	integer fligthArrival;
+	integer flightDeparture;
+	integer routeDuration;
+}
+
+event FlightWithRouteMatchRemovedEvent {
+	string flightID;
+}
+
+event FlightInTravelMatchEvent {
+	string flightID;
+	integer planeCapacity;
+}
+
+event FlightInTravelMatchRemovedEvent {
+	string flightID;
+}
+
+event TravelHasConnectingFlightMatchEvent {
+	string travelID;
+	string connectingFlightID;
+	string flightID;
+	integer connectingFlightDeparture;
+	integer flightArrival;
+	integer arrivalGatePosition;
+	integer departingGatePosition;
+	float transitAirportSize;
+}
+
+event TravelHasConnectingFlightMatchRemovedEvent {
+	string travelID;
+	string connectingFlightID;
+}
+
+event FlightDelayed {
+	string flightID;
+}
+
+event FlightOnTimeAgain{
+	string flightID;
+}
+
+event TravelHasNotReachableConnectingFlight {
+	string travelID;
+	string connectingFlightID;
+}
