@@ -1,0 +1,32 @@
+﻿//*****************************************************************************
+// Title:         InternalEvents
+// Description:   Internal Event definitions for internal routing and 
+// Dependencies:  None
+// Author:        Konrad Altenhofen
+//
+//*****************************************************************************
+
+/**
+ *  Internal Events
+ *
+ */
+event FlightDelayed {
+	string flightID;
+}
+
+event FlightOnTimeAgain{
+	string flightID;
+}
+
+event TravelHasNotReachableConnectingFlight {
+	string travelID;
+	string connectingFlightID;
+}
+
+event FlightHasFreeSpaces {
+	string flightID;
+}
+
+event FlightIsFull {
+	string flightID;
+}

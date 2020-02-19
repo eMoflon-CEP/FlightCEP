@@ -1,32 +1,32 @@
 ﻿//*****************************************************************************
 // Title:         FlightMonitorEvents
-// Description:   Event Definitions for the Flight Model
+// Description:   Event-Definitons to the corresponding matches in Apama
 // Dependencies:  None
 // Author:        Konrad Altenhofen
 //
 //*****************************************************************************
 
+/**
+ * Events to the corresponding matches in Apama
+ */
 
-
-// TODO: Monitors and event definitions here
-
-event FlightWithRouteMatchEvent {
+event FlightMatchEvent {
 	string flightID;
 	integer fligthArrival;
 	integer flightDeparture;
 	integer routeDuration;
 }
 
-event FlightWithRouteMatchRemovedEvent {
+event FlightRemovedEvent {
 	string flightID;
 }
 
-event FlightInTravelMatchEvent {
+event TravelWithFlightMatchEvent {
 	string flightID;
 	integer planeCapacity;
 }
 
-event FlightInTravelMatchRemovedEvent {
+event TravelWithFlightMatchRemovedEvent {
 	string flightID;
 }
 
@@ -46,15 +46,17 @@ event TravelHasConnectingFlightMatchRemovedEvent {
 	string connectingFlightID;
 }
 
-event FlightDelayed {
-	string flightID;
-}
-
-event FlightOnTimeAgain{
-	string flightID;
-}
-
-event TravelHasNotReachableConnectingFlight {
-	string travelID;
+event ConnectingFlightAlternativeMatch {
 	string connectingFlightID;
+	string replacementFlightID;
+	string flightID;
+	integer replacementFlightDeparture;
+	integer replacementFlightArrival;
+	integer replacementFlightDepartingGatePosition;
+}
+
+event ConnectingFlightAlternativeRemovedMatch {
+	string connectingFlightID;
+	string replacementFlightID;
+	string flightID;
 }
