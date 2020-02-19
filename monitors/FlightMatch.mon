@@ -13,59 +13,120 @@
 monitor FlightMatch {
 	constant string eventChannel := "eMoflonPatternMatch";
 	TravelHasConnectingFlightMatchEvent travelHasConnectingFlight;
+	ConnectingFlightAlternativeMatch connectingFlightAlternative;
+	FlightMatchEvent flightWithRoute;
+	dictionary<string, integer> personsOnFlightDict;
+	dictionary<string, integer> flightCapacityDict;
+	dictionary<string, ConnectingFlightAlternativeMatch> alternativeForConnectingFlightDict;
 
 	action onload() {
+		personsOnFlightDict := new dictionary<string, integer>;
+		flightCapacityDict := new dictionary<string, integer>;
+		alternativeForConnectingFlightDict := new dictionary<string, ConnectingFlightAlternativeMatch>;
 		monitor.subscribe(eventChannel);
 		
-		
-		// flight delayed
-		on all FlightWithRouteMatchEvent() as flightWithRoute {
-			log "*** Flight[" + flightWithRoute.flightID + "] found ***" at INFO;
-			if (flightWithRoute.fligthArrival > flightWithRoute.flightDeparture + flightWithRoute.routeDuration) {
-				send FlightDelayed(flightWithRoute.flightID) to eventChannel;
-				log "*** Flight[" + flightWithRoute.flightID + "] is delayed ***" at INFO; 
-			} else {
-				log "*** Flight[" + flightWithRoute.flightID + "] is on time ***" at INFO; 
-				send FlightOnTimeAgain(flightWithRoute.flightID) to eventChannel;
-			}
+		/**
+		 *  Is flight delayed?
+		 */
+		on all FlightMatchEvent():flightWithRoute checkDelayedFlight();
+		/**
+		 *  Has flight better alternative connecting flight?
+		 */
+		on (all ConnectingFlightAlternativeMatch(): connectingFlightAlternative)
+		    and TravelHasConnectingFlightMatchEvent(flightID=connectingFlightAlternative.flightID):
+		        travelHasConnectingFlight
+			and (all FlightHasFreeSpaces (flightID=connectingFlightAlternative.replacementFlightID)
+			        -> not FlightIsFull(flightID=connectingFlightAlternative.replacementFlightID)) updateAlternative();
+		/**
+		 *  Update persons currently on flight 
+		 */
+		on all TravelWithFlightMatchEvent() as flightInTravel {
+			addPersonToFlight(flightInTravel.flightID, flightInTravel.planeCapacity, 1);
 		}
-		
-		// flight capacity
-//		on all unmatched FlightInTravelMatchEvent() as flightInTravel {
-//			spawn summationForFlight(flightInTravel.flightID, flightInTravel.planeCapacity);
-//		}
-		
-		// connection flight not reachable
+		on all TravelWithFlightMatchRemovedEvent() as flightInTravel {
+			removePersonFromFlight(flightInTravel.flightID, 1);
+		}
+		/**
+		 *  Connecting-Flight not reachable
+		 */
 		on all TravelHasConnectingFlightMatchEvent(): travelHasConnectingFlight -> 
-		(FlightDelayed(flightID=travelHasConnectingFlight.flightID) or FlightOnTimeAgain(flightID=travelHasConnectingFlight.flightID)) {
-			integer abs:=0;
-			if((travelHasConnectingFlight.arrivalGatePosition - travelHasConnectingFlight.departingGatePosition)<0) {
-				abs:= (travelHasConnectingFlight.departingGatePosition - travelHasConnectingFlight.arrivalGatePosition);
-			} else {
-				abs:=(travelHasConnectingFlight.arrivalGatePosition - travelHasConnectingFlight.departingGatePosition);
-			}	
-			if(travelHasConnectingFlight.connectingFlightDeparture.toFloat() <= (travelHasConnectingFlight.flightArrival.toFloat()
-							+ abs.toFloat() * travelHasConnectingFlight.transitAirportSize)) {
-				log "*** Travel[" + travelHasConnectingFlight.travelID + "] is not reachable ***" at DEBUG;
-				send TravelHasNotReachableConnectingFlight(travelHasConnectingFlight.travelID,travelHasConnectingFlight.connectingFlightID) to eventChannel;
+			all(FlightDelayed(flightID=travelHasConnectingFlight.flightID) or FlightOnTimeAgain(flightID=travelHasConnectingFlight.flightID)) {
+			if (not isReachable(travelHasConnectingFlight.arrivalGatePosition, travelHasConnectingFlight.departingGatePosition,
+			                 travelHasConnectingFlight.connectingFlightDeparture,
+			                 travelHasConnectingFlight.flightArrival, travelHasConnectingFlight.transitAirportSize)){
+				log "*** Travel[" + travelHasConnectingFlight.travelID + "]: Flight[" + travelHasConnectingFlight.connectingFlightID + 
+					"] is not reachable ***" at INFO;
+				route TravelHasNotReachableConnectingFlight(travelHasConnectingFlight.travelID,travelHasConnectingFlight.connectingFlightID);
+				log "*** Travel[" + travelHasConnectingFlight.travelID + "]: Best connecting-flight-alternative: Flight["
+				+ alternativeForConnectingFlightDict[travelHasConnectingFlight.travelID].replacementFlightID + 
+					"] is not reachable ***" at INFO;
 			} else {
 				// TODO: Reachable again
-				log "*** Travel[" + travelHasConnectingFlight.travelID + "] is reachable again ***" at DEBUG;
+				log "*** Travel[" + travelHasConnectingFlight.travelID + "]: Flight[" + travelHasConnectingFlight.connectingFlightID + 
+					"]  is reachable again ***" at INFO;
 			}
 		}
 	}
 	
-//	action summationForFlight(string flightID, integer maxCapacity) {
-//		integer sum := 0;
-//		on all  FlightInTravelMatchEvent(flightID=flightID) as flightInTravel {
-//			sum := sum+1;
-//			if(sum>=maxCapacity) {
-//				
-//			}
-//		}
-//		on all FlightInTravelMatchRemovedEvent(flightID=flightID) as flightInTravelRemoved {
-//			sum := sum-1;
-//			
-//		}
-//	}
+	action checkDelayedFlight() {
+		log "*** Flight[" + flightWithRoute.flightID + "] found ***" at INFO;
+		if (flightWithRoute.fligthArrival > flightWithRoute.flightDeparture + flightWithRoute.routeDuration) {
+			route FlightDelayed(flightWithRoute.flightID);
+			log "*** Flight[" + flightWithRoute.flightID + "] is delayed ***" at INFO; 
+		} else {
+			route FlightOnTimeAgain(flightWithRoute.flightID);
+			log "*** Flight[" + flightWithRoute.flightID + "] is on time ***" at INFO;
+		}
+	}
+	
+	action isReachable(integer arrivalGatePosition, integer departingGatePosition,
+	       integer connectingFlightDeparture, integer flightArrival, float transitAirportSize) returns boolean {
+		integer abs:=0;
+		if((arrivalGatePosition - departingGatePosition)<0) {
+			abs:= (departingGatePosition - arrivalGatePosition);
+		} else {
+			abs:=(arrivalGatePosition - departingGatePosition);
+		}
+		return connectingFlightDeparture.toFloat() <= (travelHasConnectingFlight.flightArrival.toFloat()
+				+ abs.toFloat() * transitAirportSize);
+	}
+	
+	action addPersonToFlight(string flightID, integer planeCapacity, integer numPersons) {
+		integer personsOnFlight := 0;
+		if(not flightCapacityDict.hasKey(flightID) ) {
+			flightCapacityDict[flightID] := planeCapacity;
+		}
+		if(personsOnFlightDict.hasKey(flightID)) {
+			personsOnFlight := personsOnFlightDict[flightID];
+		}
+		personsOnFlight := personsOnFlight+numPersons;
+		personsOnFlightDict[flightID] := personsOnFlight;
+		
+		integer spacesLeft := flightCapacityDict[flightID] - personsOnFlight;
+		
+		log "*** Flight[" + flightID + "] has " + spacesLeft.toString() + " seat(s) left ***" ;
+		
+		if(personsOnFlight >= flightCapacityDict[flightID]) {
+			route FlightIsFull(flightID);
+		} else {
+			route FlightHasFreeSpaces(flightID);
+		}
+	}
+	
+	action removePersonFromFlight(string flightID, integer numPersons) {
+		addPersonToFlight(flightID,0,-numPersons);
+	}
+	
+	action updateAlternative() {			
+			if(isReachable(travelHasConnectingFlight.arrivalGatePosition,
+		               connectingFlightAlternative.replacementFlightDepartingGatePosition,
+		               connectingFlightAlternative.replacementFlightDeparture,
+		               travelHasConnectingFlight.flightArrival,
+		               travelHasConnectingFlight.transitAirportSize)
+				and (not alternativeForConnectingFlightDict.hasKey(travelHasConnectingFlight.connectingFlightID)
+				     or connectingFlightAlternative.replacementFlightArrival < 
+				     alternativeForConnectingFlightDict[travelHasConnectingFlight.connectingFlightID].replacementFlightArrival)) {
+				alternativeForConnectingFlightDict[travelHasConnectingFlight.connectingFlightID] := connectingFlightAlternative;
+			}
+	}
 }
