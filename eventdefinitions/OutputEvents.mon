@@ -1,0 +1,17 @@
+﻿//*****************************************************************************
+// Title:         OutputEvents
+// Description:   OutputEvents description
+// Dependencies:  None
+// Author:        Konrad Altenhofen
+//
+//*****************************************************************************
+
+event SendWorkingConnectingFlights {
+	integer messageID;
+	integer workingConnectingFlights;
+}
+
+event SendDelayedConnectingFlights {
+	integer messageID;
+	integer delayedConnectingFlights;
+}

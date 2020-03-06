@@ -30,3 +30,15 @@ event FlightHasFreeSpaces {
 event FlightIsFull {
 	string flightID;
 }
+
+event ServiceLevel {
+	string serviceLevel;
+}
+
+event RequestDelayedConnectingFlights {
+	integer messageID;
+}
+
+event RequestWorkingConnectingFlights {
+	integer messageID;
+}
