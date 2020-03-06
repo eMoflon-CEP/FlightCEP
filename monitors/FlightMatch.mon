@@ -12,18 +12,49 @@
 
 monitor FlightMatch {
 	constant string eventChannel := "eMoflonPatternMatch";
+	constant string outputChannel := "eMoflonTalkback";
+	/**
+	 *  Temp events for further processing
+	 */
 	TravelHasConnectingFlightMatchEvent travelHasConnectingFlight;
-	ConnectingFlightAlternativeMatch connectingFlightAlternative;
+	ConnectingFlightAlternativeMatchEvent connectingFlightAlternative;
 	FlightMatchEvent flightWithRoute;
+	FlightDelayed delayed;
+	/**
+	 *  Persons currently on a plane, plane capacity and best alternative flight
+	 */
 	dictionary<string, integer> personsOnFlightDict;
 	dictionary<string, integer> flightCapacityDict;
-	dictionary<string, ConnectingFlightAlternativeMatch> alternativeForConnectingFlightDict;
+	dictionary<string, ConnectingFlightAlternativeMatchEvent> alternativeForConnectingFlightDict;
+	integer serviceLevel;
+	integer numberDelayedConnectingFlights;
+	integer numberWorkingConnectingFlights;
 
 	action onload() {
+		// init dictionarys
 		personsOnFlightDict := new dictionary<string, integer>;
 		flightCapacityDict := new dictionary<string, integer>;
-		alternativeForConnectingFlightDict := new dictionary<string, ConnectingFlightAlternativeMatch>;
+		alternativeForConnectingFlightDict := new dictionary<string, ConnectingFlightAlternativeMatchEvent>;
+		numberDelayedConnectingFlights := 0;
+		numberWorkingConnectingFlights := 0;
+		// subscribe to event channel
 		monitor.subscribe(eventChannel);
+		
+		on ServiceLevel("Test") {
+			log "<DEBUG> Serice Level: Test
+				eventChannel: " + eventChannel +
+				"outputChannel: " + outputChannel at INFO;
+			serviceLevel := 2;
+		}
+		
+		on ServiceLevel("Test") -> all RequestWorkingConnectingFlights() as request {
+			log "<DEBUG> Received request for working ConnectingFlights: " + numberWorkingConnectingFlights.toString() at INFO;
+			send SendWorkingConnectingFlights(request.messageID ,numberWorkingConnectingFlights) to eventChannel;
+		}
+		on ServiceLevel("Test") -> all RequestDelayedConnectingFlights() as request {
+			log "<DEBUG> Received request for delayed ConnectingFlights" + numberDelayedConnectingFlights.toString() at INFO;
+			send SendDelayedConnectingFlights(request.messageID, numberDelayedConnectingFlights) to eventChannel;
+		}
 		
 		/**
 		 *  Is flight delayed?
@@ -32,11 +63,13 @@ monitor FlightMatch {
 		/**
 		 *  Has flight better alternative connecting flight?
 		 */
-		on (all ConnectingFlightAlternativeMatch(): connectingFlightAlternative)
+		on (all ConnectingFlightAlternativeMatchEvent(): connectingFlightAlternative)
+		    // 
 		    and TravelHasConnectingFlightMatchEvent(flightID=connectingFlightAlternative.flightID):
 		        travelHasConnectingFlight
 			and (all FlightHasFreeSpaces (flightID=connectingFlightAlternative.replacementFlightID)
-			        -> not FlightIsFull(flightID=connectingFlightAlternative.replacementFlightID)) updateAlternative();
+			        -> not FlightIsFull(flightID=connectingFlightAlternative.replacementFlightID))
+			updateAlternative();
 		/**
 		 *  Update persons currently on flight 
 		 */
@@ -49,26 +82,46 @@ monitor FlightMatch {
 		/**
 		 *  Connecting-Flight not reachable
 		 */
-		on all TravelHasConnectingFlightMatchEvent(): travelHasConnectingFlight -> 
-			all(FlightDelayed(flightID=travelHasConnectingFlight.flightID) or FlightOnTimeAgain(flightID=travelHasConnectingFlight.flightID)) {
+		on all TravelHasConnectingFlightMatchEvent(): travelHasConnectingFlight {
+			numberWorkingConnectingFlights := numberWorkingConnectingFlights + 1;
+			log "*** CF-Travel[" + travelHasConnectingFlight.travelID + "] with Flight[" + travelHasConnectingFlight.flightID + 
+			"]  found ***" at INFO;
+		}
+		on all FlightDelayed() as delayed {
+			log "*** <DEBUG> DELAYED FLIGHT[" + delayed.flightID + "]  found ***" at INFO;
+		}
+		on all TravelHasConnectingFlightMatchEvent(): travelHasConnectingFlight {
+			on all FlightDelayed(flightID=travelHasConnectingFlight.flightID) as delayed connectingFlightNotReachable();
+		}
+		on all TravelHasNotReachableConnectingFlight() -> FlightOnTimeAgain() {
+			numberDelayedConnectingFlights := numberDelayedConnectingFlights -1;
+			numberWorkingConnectingFlights := numberWorkingConnectingFlights +1;
+		}
+	}
+	/**
+	 *  Actions for listener in 'onload'
+	 */
+	action connectingFlightNotReachable() {
+		log "cFNR " + travelHasConnectingFlight.flightID at INFO;
 			if (not isReachable(travelHasConnectingFlight.arrivalGatePosition, travelHasConnectingFlight.departingGatePosition,
 			                 travelHasConnectingFlight.connectingFlightDeparture,
 			                 travelHasConnectingFlight.flightArrival, travelHasConnectingFlight.transitAirportSize)){
+				numberDelayedConnectingFlights := numberDelayedConnectingFlights +1;
+				numberWorkingConnectingFlights := numberWorkingConnectingFlights -1;
 				log "*** Travel[" + travelHasConnectingFlight.travelID + "]: Flight[" + travelHasConnectingFlight.connectingFlightID + 
 					"] is not reachable ***" at INFO;
 				route TravelHasNotReachableConnectingFlight(travelHasConnectingFlight.travelID,travelHasConnectingFlight.connectingFlightID);
-				log "*** Travel[" + travelHasConnectingFlight.travelID + "]: Best connecting-flight-alternative: Flight["
-				+ alternativeForConnectingFlightDict[travelHasConnectingFlight.travelID].replacementFlightID + 
-					"] is not reachable ***" at INFO;
+//				log "*** Travel[" + travelHasConnectingFlight.travelID + "]: Best connecting-flight-alternative: Flight["
+//				+ alternativeForConnectingFlightDict[travelHasConnectingFlight.travelID].replacementFlightID + 
+//					"] is not reachable ***" at INFO;
 			} else {
 				// TODO: Reachable again
 				log "*** Travel[" + travelHasConnectingFlight.travelID + "]: Flight[" + travelHasConnectingFlight.connectingFlightID + 
 					"]  is reachable again ***" at INFO;
 			}
-		}
 	}
-	
 	action checkDelayedFlight() {
+		// log "cDF" at INFO;
 		log "*** Flight[" + flightWithRoute.flightID + "] found ***" at INFO;
 		if (flightWithRoute.fligthArrival > flightWithRoute.flightDeparture + flightWithRoute.routeDuration) {
 			route FlightDelayed(flightWithRoute.flightID);
@@ -78,9 +131,9 @@ monitor FlightMatch {
 			log "*** Flight[" + flightWithRoute.flightID + "] is on time ***" at INFO;
 		}
 	}
-	
 	action isReachable(integer arrivalGatePosition, integer departingGatePosition,
 	       integer connectingFlightDeparture, integer flightArrival, float transitAirportSize) returns boolean {
+		// log "iR" at INFO;
 		integer abs:=0;
 		if((arrivalGatePosition - departingGatePosition)<0) {
 			abs:= (departingGatePosition - arrivalGatePosition);
@@ -90,8 +143,8 @@ monitor FlightMatch {
 		return connectingFlightDeparture.toFloat() <= (travelHasConnectingFlight.flightArrival.toFloat()
 				+ abs.toFloat() * transitAirportSize);
 	}
-	
 	action addPersonToFlight(string flightID, integer planeCapacity, integer numPersons) {
+		// log "aPTF" at INFO;
 		integer personsOnFlight := 0;
 		if(not flightCapacityDict.hasKey(flightID) ) {
 			flightCapacityDict[flightID] := planeCapacity;
@@ -104,29 +157,34 @@ monitor FlightMatch {
 		
 		integer spacesLeft := flightCapacityDict[flightID] - personsOnFlight;
 		
-		log "*** Flight[" + flightID + "] has " + spacesLeft.toString() + " seat(s) left ***" ;
+		
 		
 		if(personsOnFlight >= flightCapacityDict[flightID]) {
 			route FlightIsFull(flightID);
+			log "*** Flight[" + flightID + "] has " + spacesLeft.toString() + " is full ***" at INFO;
 		} else {
 			route FlightHasFreeSpaces(flightID);
 		}
 	}
-	
 	action removePersonFromFlight(string flightID, integer numPersons) {
 		addPersonToFlight(flightID,0,-numPersons);
 	}
-	
 	action updateAlternative() {			
+			// log "uA" at INFO;
 			if(isReachable(travelHasConnectingFlight.arrivalGatePosition,
 		               connectingFlightAlternative.replacementFlightDepartingGatePosition,
 		               connectingFlightAlternative.replacementFlightDeparture,
 		               travelHasConnectingFlight.flightArrival,
-		               travelHasConnectingFlight.transitAirportSize)
-				and (not alternativeForConnectingFlightDict.hasKey(travelHasConnectingFlight.connectingFlightID)
+		               travelHasConnectingFlight.transitAirportSize)) {
+				if (serviceLevel=2) {
+					log "*** Flight[" + connectingFlightAlternative.replacementFlightID + "] is an alternative for ConnectingFlight["
+					+ connectingFlightAlternative.connectingFlightID + "] of Travel[" + travelHasConnectingFlight.travelID + "] ***" at INFO;
+				}
+				if((not alternativeForConnectingFlightDict.hasKey(travelHasConnectingFlight.connectingFlightID)
 				     or connectingFlightAlternative.replacementFlightArrival < 
 				     alternativeForConnectingFlightDict[travelHasConnectingFlight.connectingFlightID].replacementFlightArrival)) {
 				alternativeForConnectingFlightDict[travelHasConnectingFlight.connectingFlightID] := connectingFlightAlternative;
 			}
+		}
 	}
 }
