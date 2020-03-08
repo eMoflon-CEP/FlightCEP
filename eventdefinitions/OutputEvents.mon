@@ -28,6 +28,7 @@ event RemoveIssue {
 event Solution {
 	integer solutionMatchID;
 	integer issueMatchID;
+	string description;
 }
 
 event RemoveSolution {
