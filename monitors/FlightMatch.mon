@@ -16,7 +16,6 @@ monitor FlightMatch {
 	/**
 	 *  Temp events for further processing
 	 */
-	TravelHasConnectingFlightMatchEvent travelHasConnectingFlight;
 	ConnectingFlightAlternativeMatchEvent connectingFlightAlternative;
 	FlightMatchEvent flightWithRoute;
 	FlightDelayed delayed;
@@ -66,10 +65,12 @@ monitor FlightMatch {
 		 *  Has flight better alternative connecting flight?
 		 */
 		on all ConnectingFlightAlternativeMatchEvent(): connectingFlightAlternative {
-			on TravelHasConnectingFlightMatchEvent(flightID=connectingFlightAlternative.flightID):
+			on all TravelHasConnectingFlightMatchEvent(flightID=connectingFlightAlternative.flightID) as
 		        travelHasConnectingFlight
 			   and all FlightHasFreeSpaces (flightID=connectingFlightAlternative.replacementFlightID)
-	        	-> not FlightIsFull(flightID=connectingFlightAlternative.replacementFlightID) updateAlternative();
+	        	-> not FlightIsFull(flightID=connectingFlightAlternative.replacementFlightID) {
+	        		updateAlternative(travelHasConnectingFlight);
+	        	}
 		}
 			
 		/**
@@ -87,15 +88,15 @@ monitor FlightMatch {
 		on all FlightDelayed() as delayed {
 			log "*** <DEBUG> DELAYED FLIGHT[" + delayed.flightID + "]  found ***" at INFO;
 		}
-		on all TravelHasConnectingFlightMatchEvent(): travelHasConnectingFlight {
+		on all TravelHasConnectingFlightMatchEvent() as travelHasConnectingFlight {
 			numberWorkingConnectingFlights := numberWorkingConnectingFlights + 1;
 			log "*** CF-Travel[" + travelHasConnectingFlight.travelID + "] with Flight[" + travelHasConnectingFlight.flightID + 
 			"]  found ***" at INFO;
 			on all FlightDelayed(flightID=travelHasConnectingFlight.flightID) as flight {
-				connectingFlightNotReachable(flight.arrival);
+				connectingFlightNotReachable(flight.arrival,travelHasConnectingFlight);
 			}
 			on all FlightOnTimeAgain(flightID=travelHasConnectingFlight.flightID) as flight {
-				connectingFlightNotReachable(flight.arrival);
+				connectingFlightNotReachable(flight.arrival,travelHasConnectingFlight);
 			}
 			on all TravelHasNotReachableConnectingFlight(travelID=travelHasConnectingFlight.travelID, 
 			                                           flightID=travelHasConnectingFlight.flightID)
@@ -120,7 +121,7 @@ monitor FlightMatch {
 	/**
 	 *  Actions for listener in 'onload'
 	 */
-	action connectingFlightNotReachable(integer flightArrival) {
+	action connectingFlightNotReachable(integer flightArrival, TravelHasConnectingFlightMatchEvent travelHasConnectingFlight) {
 		isReach := isReachable(travelHasConnectingFlight.arrivalGatePosition, travelHasConnectingFlight.departingGatePosition,
 	                 travelHasConnectingFlight.connectingFlightDeparture,
 	                 flightArrival, travelHasConnectingFlight.transitAirportSize);
@@ -188,7 +189,7 @@ monitor FlightMatch {
 	action removePersonFromFlight(string flightID, integer numPersons) {
 		addPersonToFlight(flightID,0,-numPersons);
 	}
-	action updateAlternative() {			
+	action updateAlternative(TravelHasConnectingFlightMatchEvent travelHasConnectingFlight) {			
 			// log "uA" at INFO;
 			if(isReachable(travelHasConnectingFlight.arrivalGatePosition,
 		               connectingFlightAlternative.replacementFlightDepartingGatePosition,
@@ -199,7 +200,8 @@ monitor FlightMatch {
 					log "*** Flight[" + connectingFlightAlternative.replacementFlightID + "] is an alternative for ConnectingFlight["
 					+ connectingFlightAlternative.connectingFlightID + "] of Travel[" + travelHasConnectingFlight.travelID + "] ***" at INFO;
 				}
-				send Solution(connectingFlightAlternative.solutionMatchID,travelHasConnectingFlight.issueMatchID) to outputChannel;
+				send Solution(connectingFlightAlternative.solutionMatchID,travelHasConnectingFlight.issueMatchID,"*** Flight[" + connectingFlightAlternative.replacementFlightID + "] is an alternative for ConnectingFlight["
+								+ connectingFlightAlternative.connectingFlightID + "] of Travel[" + travelHasConnectingFlight.travelID + "] ***") to outputChannel;
 				if((not alternativeForConnectingFlightDict.hasKey(travelHasConnectingFlight.connectingFlightID)
 				     or connectingFlightAlternative.replacementFlightArrival < 
 				     alternativeForConnectingFlightDict[travelHasConnectingFlight.connectingFlightID].replacementFlightArrival)) {
