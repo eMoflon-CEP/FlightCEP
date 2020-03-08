@@ -15,3 +15,22 @@ event SendDelayedConnectingFlights {
 	integer messageID;
 	integer delayedConnectingFlights;
 }
+
+event Issue {
+	integer issueMatchID;
+	string description;
+}
+
+event RemoveIssue {
+	integer issueMatchID;
+}
+
+event Solution {
+	integer solutionMatchID;
+	integer issueMatchID;
+}
+
+event RemoveSolution {
+	integer solutionMatchID;
+	integer issueMatchID;
+}
