@@ -40,6 +40,7 @@ monitor FlightMatch {
 		numberWorkingConnectingFlights := 0;
 		// subscribe to event channel
 		monitor.subscribe(eventChannel);
+		monitor.subscribe(outputChannel);
 		
 		on ServiceLevel("Test") {
 			log "<DEBUG> Serice Level: Test
@@ -98,18 +99,18 @@ monitor FlightMatch {
 			on all FlightOnTimeAgain(flightID=travelHasConnectingFlight.flightID) as flight {
 				connectingFlightNotReachable(flight.arrival,travelHasConnectingFlight);
 			}
-			on all TravelHasNotReachableConnectingFlight(travelID=travelHasConnectingFlight.travelID, 
+			on all (TravelHasNotReachableConnectingFlight(travelID=travelHasConnectingFlight.travelID, 
 			                                           flightID=travelHasConnectingFlight.flightID)
 					-> TravelHasReachableConnectingFlight(travelID=travelHasConnectingFlight.travelID, 
-					                                           flightID=travelHasConnectingFlight.flightID) {
+					                                           flightID=travelHasConnectingFlight.flightID)) {
 				numberDelayedConnectingFlights := numberDelayedConnectingFlights -1;
 				numberWorkingConnectingFlights := numberWorkingConnectingFlights +1;
 				send RemoveIssue(travelHasConnectingFlight.issueMatchID) to outputChannel;
 			}
-			on all TravelHasReachableConnectingFlight(travelID=travelHasConnectingFlight.travelID, 
+			on all (TravelHasReachableConnectingFlight(travelID=travelHasConnectingFlight.travelID, 
 				                                           flightID=travelHasConnectingFlight.flightID)
 						-> TravelHasNotReachableConnectingFlight(travelID=travelHasConnectingFlight.travelID, 
-						                                           flightID=travelHasConnectingFlight.flightID) {
+						                                           flightID=travelHasConnectingFlight.flightID)) {
 				numberDelayedConnectingFlights := numberDelayedConnectingFlights +1;
 				numberWorkingConnectingFlights := numberWorkingConnectingFlights -1;
 				send Issue(travelHasConnectingFlight.issueMatchID, "*** Travel[" + travelHasConnectingFlight.travelID + "]:
@@ -200,8 +201,10 @@ monitor FlightMatch {
 					log "*** Flight[" + connectingFlightAlternative.replacementFlightID + "] is an alternative for ConnectingFlight["
 					+ connectingFlightAlternative.connectingFlightID + "] of Travel[" + travelHasConnectingFlight.travelID + "] ***" at INFO;
 				}
-				send Solution(connectingFlightAlternative.solutionMatchID,travelHasConnectingFlight.issueMatchID,"*** Flight[" + connectingFlightAlternative.replacementFlightID + "] is an alternative for ConnectingFlight["
+				on Issue(issueMatchID=travelHasConnectingFlight.issueMatchID) { 
+					send Solution(connectingFlightAlternative.solutionMatchID,travelHasConnectingFlight.issueMatchID,"*** Flight[" + connectingFlightAlternative.replacementFlightID + "] is an alternative for ConnectingFlight["
 								+ connectingFlightAlternative.connectingFlightID + "] of Travel[" + travelHasConnectingFlight.travelID + "] ***") to outputChannel;
+				}
 				if((not alternativeForConnectingFlightDict.hasKey(travelHasConnectingFlight.connectingFlightID)
 				     or connectingFlightAlternative.replacementFlightArrival < 
 				     alternativeForConnectingFlightDict[travelHasConnectingFlight.connectingFlightID].replacementFlightArrival)) {
