@@ -1,0 +1,51 @@
+﻿//*****************************************************************************
+// Title:         FlightDelayed
+// Description:   FlightDelayed description
+// Dependencies:  None
+// Author:        sebas
+//
+//*****************************************************************************
+
+
+
+// TODO: Monitors and event definitions here
+
+
+monitor FlightDelayedMonitor {
+	constant string eventChannel := "eMoflonPatternMatch";
+	
+	action onload() {
+		monitor.subscribe(eventChannel);
+		on all FlightMatchEvent() as flightMatch {
+			if(constraint(flightMatch)) {
+				route FlightDelayedEvent(flightMatch.flightID, flightMatch.flightArrival, 
+			 	                         flightMatch.flightDeparture, flightMatch.routeDuration);
+			}
+		}
+	}
+	
+	action constraint(FlightMatchEvent match) returns boolean {
+		return match.flightArrival < match.flightDeparture + match.routeDuration; 
+	}
+}
+
+monitor FlightOnTimeMonitor {
+	constant string eventChannel := "eMoflonPatternMatch";
+	
+	action onload() {
+		monitor.subscribe(eventChannel);
+		on all FlightDelayedEvent() as delayedEvent {
+			on FlightDelayedEvent(flightID = delayedEvent.flightID)
+			   -> all FlightMatchEvent(flightID = delayedEvent.flightID) as flightMatch {
+				   if(constraint(flightMatch)) {
+					   route FlightOnTimeEvent(flightMatch.flightID, flightMatch.flightArrival, 
+					 	                         flightMatch.flightDeparture, flightMatch.routeDuration);
+				   }
+			   }
+		}
+	}
+	
+	action constraint(FlightMatchEvent match) returns boolean {
+		return match.flightArrival >= match.flightDeparture + match.routeDuration; 
+	}
+}

@@ -1,0 +1,27 @@
+﻿//*****************************************************************************
+// Title:         CFNotReachable
+// Description:   CFNotReachable description
+// Dependencies:  None
+// Author:        sebas
+//
+//*****************************************************************************
+
+
+
+// TODO: Monitors and event definitions here
+
+//monitor CFReachable {
+//	constant string eventChannel := "eMoflonPatternMatch";
+//	
+//	action onload() {
+//		monitor.subscribe(eventChannel);
+//		
+//		on all TravelHasConnectingFlightMatchEvent() as cfMatch {
+//			
+//		}
+//	}
+//	
+//	action constraint(TravelHasConnectingFlightMatchEvent cf) returns boolean {
+//		
+//	}
+//}
