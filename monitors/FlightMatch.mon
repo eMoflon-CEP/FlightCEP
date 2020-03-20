@@ -58,6 +58,16 @@ monitor FlightMatch {
 			send SendDelayedConnectingFlights(request.messageID, numberDelayedConnectingFlights) to eventChannel;
 		}
 		
+		on all RequestCompletionEvent() as request and completed TravelHasNotReachableConnectingFlight(){
+			log "Completed";
+			send CompletionEvent(request.messageID, "Found all not reachable CF.") to eventChannel;
+		}
+		
+		on all RequestCompletionEvent() as request and not (completed TravelHasNotReachableConnectingFlight() within(0.5)) {
+			log "Completed";
+			send CompletionEvent(request.messageID, "Timed out.") to eventChannel;
+		}
+		
 		/**
 		 *  Is flight delayed?
 		 */

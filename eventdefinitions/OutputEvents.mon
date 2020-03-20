@@ -6,6 +6,15 @@
 //
 //*****************************************************************************
 
+event RequestCompletionEvent {
+	integer messageID;
+}
+
+event CompletionEvent {
+	integer messageID;
+	string reason;
+}
+
 event SendWorkingConnectingFlights {
 	integer messageID;
 	integer workingConnectingFlights;
