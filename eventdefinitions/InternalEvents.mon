@@ -12,14 +12,23 @@
  */
 event FlightDelayed {
 	string flightID;
+	integer arrival;
 }
 
 event FlightOnTimeAgain{
 	string flightID;
+	integer arrival;
 }
 
 event TravelHasNotReachableConnectingFlight {
 	string travelID;
+	string flightID;
+	string connectingFlightID;
+}
+
+event TravelHasReachableConnectingFlight {
+	string travelID;
+	string flightID;
 	string connectingFlightID;
 }
 
@@ -29,4 +38,16 @@ event FlightHasFreeSpaces {
 
 event FlightIsFull {
 	string flightID;
+}
+
+event ServiceLevel {
+	string serviceLevel;
+}
+
+event RequestDelayedConnectingFlights {
+	integer messageID;
+}
+
+event RequestWorkingConnectingFlights {
+	integer messageID;
 }

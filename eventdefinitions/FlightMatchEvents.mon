@@ -31,6 +31,7 @@ event TravelWithFlightMatchRemovedEvent {
 }
 
 event TravelHasConnectingFlightMatchEvent {
+	integer issueMatchID;
 	string travelID;
 	string connectingFlightID;
 	string flightID;
@@ -46,7 +47,8 @@ event TravelHasConnectingFlightMatchRemovedEvent {
 	string connectingFlightID;
 }
 
-event ConnectingFlightAlternativeMatch {
+event ConnectingFlightAlternativeMatchEvent {
+	integer solutionMatchID;
 	string connectingFlightID;
 	string replacementFlightID;
 	string flightID;
@@ -55,7 +57,7 @@ event ConnectingFlightAlternativeMatch {
 	integer replacementFlightDepartingGatePosition;
 }
 
-event ConnectingFlightAlternativeRemovedMatch {
+event ConnectingFlightAlternativeMatchRemovedEvent {
 	string connectingFlightID;
 	string replacementFlightID;
 	string flightID;

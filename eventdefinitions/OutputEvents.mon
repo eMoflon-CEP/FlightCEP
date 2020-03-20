@@ -1,0 +1,37 @@
+﻿//*****************************************************************************
+// Title:         OutputEvents
+// Description:   OutputEvents description
+// Dependencies:  None
+// Author:        Konrad Altenhofen
+//
+//*****************************************************************************
+
+event SendWorkingConnectingFlights {
+	integer messageID;
+	integer workingConnectingFlights;
+}
+
+event SendDelayedConnectingFlights {
+	integer messageID;
+	integer delayedConnectingFlights;
+}
+
+event Issue {
+	integer issueMatchID;
+	string description;
+}
+
+event RemoveIssue {
+	integer issueMatchID;
+}
+
+event Solution {
+	integer solutionMatchID;
+	integer issueMatchID;
+	string description;
+}
+
+event RemoveSolution {
+	integer solutionMatchID;
+	integer issueMatchID;
+}
