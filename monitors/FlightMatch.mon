@@ -132,6 +132,7 @@ monitor FlightMatch {
 			numberWorkingConnectingFlights := numberWorkingConnectingFlights + 1;
 			log "*** CF-Travel[" + travelHasConnectingFlight.travelID + "] with Flight[" + travelHasConnectingFlight.flightID + 
 			"]  found ***" at DEBUG;
+			connectingFlightNotReachable(travelHasConnectingFlight.flightArrival,travelHasConnectingFlight);
 			on all FlightDelayed(flightID=travelHasConnectingFlight.flightID) as flight {
 				connectingFlightNotReachable(flight.arrival,travelHasConnectingFlight);
 			}
