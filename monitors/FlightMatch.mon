@@ -58,15 +58,43 @@ monitor FlightMatch {
 			send SendDelayedConnectingFlights(request.messageID, numberDelayedConnectingFlights) to eventChannel;
 		}
 		
-		on all RequestCompletionEvent() as request and completed TravelHasNotReachableConnectingFlight(){
-			log "Completed";
-			send CompletionEvent(request.messageID, "Found all not reachable CF.") to eventChannel;
+		on all RequestCompletionEvent() as request  {
+			log "Received request: "+request.messageId.toString();
+//			boolean swcf := false;
+//			boolean sdcf := false;
+//			on completed SendWorkingConnectingFlights() {
+//				log "Received request: "+request.messageID.toString()+" completed SWCF.";
+//				swcf := true;
+//				if(swcf and sdcf) {
+//					log "Completed";
+//					send CompletionEvent(request.messageID, "Send all output events.") to eventChannel;
+//				}
+//				
+//				
+//			}
+//			on completed SendDelayedConnectingFlights() {
+//				log "Received request: "+request.messageID.toString()+" completed SDCF.";
+//				sdcf := true;
+//				if(swcf and sdcf) {
+//					log "Completed";
+//					send CompletionEvent(request.messageID, "Send all output events.") to eventChannel;
+//				}
+//			}
+//			log "First..";
+//			on completed TravelHasNotReachableConnectingFlight() {
+//				log "Received request: "+request.messageId.toString()+" completed THNRCF.";
+//				log "Completed";
+//				send CompletionEvent(request.messageId, "Send all output events.") to eventChannel;
+//			}
+//			log "Second..";
+//			on not (CompletionEvent() within(0.5)) {
+//				log "Received request: "+request.messageId.toString()+" timeout.";
+//				log "Completed";
+//				send CompletionEvent(request.messageId, "Timed out.") to eventChannel;
+//			}
+			send CompletionEvent(request.messageId, "Dummy event.") to eventChannel;
 		}
-		
-		on all RequestCompletionEvent() as request and not (completed TravelHasNotReachableConnectingFlight() within(0.5)) {
-			log "Completed";
-			send CompletionEvent(request.messageID, "Timed out.") to eventChannel;
-		}
+
 		
 		/**
 		 *  Is flight delayed?

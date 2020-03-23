@@ -7,11 +7,11 @@
 //*****************************************************************************
 
 event RequestCompletionEvent {
-	integer messageID;
+	integer messageId;
 }
 
 event CompletionEvent {
-	integer messageID;
+	integer messageId;
 	string reason;
 }
 
